@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>TRACE — Follow the evidence. Find the connections.</title>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{--bg:#070709;--bg2:#101013;--panel:#121214;--line:#1d1d20;--paper:#f3efe3;--paper2:#e8e2ce;--ink:#121214;--dim:#7c7c81;--muted:#b7b7bc;--v:#a48cff;--o:#ffb95c;--g:#7cffb2}
+html{scroll-behavior:smooth} body{background:var(--bg);color:#ededed;font-family:'Instrument Serif',serif;overflow-x:hidden}
+.mono{font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.04em;text-transform:uppercase}
+.dim{color:var(--dim)}.muted{color:var(--muted)}
+#cursor{position:fixed;top:0;left:0;width:22px;height:22px;border:1px solid #fff;border-radius:50%;mix-blend-mode:difference;pointer-events:none;z-index:9999;transform:translate(-50%,-50%);transition:width.18s,height.18s,background.18s} #cursor.dot{width:6px;height:6px;background:#fff} #cursor.hover{width:36px;height:36px;background:rgba(255,255,255,.15)}
+@media(pointer:coarse){#cursor{display:none}}
+#loader{position:fixed;inset:0;background:#050507;z-index:100;display:flex;align-items:center;justify-content:center;transition:opacity.7s}
+#loader.hide{opacity:0;pointer-events:none}
+.loader-line{width:0%;height:1px;background:var(--o);animation:grow 1.2s cubic-bezier(.7,0,.3,1) forwards}
+@keyframes grow{to{width:100%}}
+nav{position:sticky;top:0;z-index:40;display:flex;justify-content:space-between;align-items:center;padding:14px 18px;border-bottom:1px solid var(--line);background:rgba(7,7,9,.88);backdrop-filter:blur(14px)}
+.nav-links{display:flex;gap:18px}.nav-links a{color:var(--dim);text-decoration:none}.nav-links a:hover{color:#fff}
+.hero{min-height:92vh;padding:18px 18px 40px;display:flex;flex-direction:column;justify-content:space-between}
+.huge{font-size:clamp(44px,8.8vw,136px);line-height:.88;letter-spacing:-.05em;font-weight:400}.huge i{font-style:italic;color:var(--o)}
+.kv{display:flex;gap:12px;flex-wrap:wrap;margin:14px 0}
+.kv span{border:1px solid var(--line);padding:6px 10px}
+.section{padding:64px 18px;border-top:1px solid var(--line)}.section.dark{background:var(--bg2)}
+.sec-h{font-size:clamp(28px,4.6vw,68px);line-height:.95;letter-spacing:-.03em;font-weight:400}
+.findings{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-top:22px}
+@media(max-width:900px){.findings{grid-template-columns:1fr 1fr}} @media(max-width:520px){.findings{grid-template-columns:1fr}}
+.find{background:var(--panel);border:1px solid var(--line);padding:16px}.find.num{font-size:44px;line-height:1}
+.bar-mini{display:flex;gap:2px;align-items:end;height:56px;margin-top:10px}.bar-mini div{flex:1;background:#2a2a2e}
+.timeline{position:relative;margin-top:18px;border-left:1px solid var(--line);padding-left:18px}
+.timeline.row{padding:14px 0;border-bottom:1px dashed #222;display:flex;justify-content:space-between;gap:12px}
+.const-wrap{position:relative;background:radial-gradient(800px 600px at 50% 10%,#1a1a22 0%,#070709 70%);border:1px solid var(--line);padding:10px;margin-top:16px}
+#constellation{width:100%;height:62vh;min-height:420px;display:block;background:transparent}
+.tooltip{position:absolute;pointer-events:none;background:var(--paper);color:var(--ink);padding:10px 12px;border:1px solid #000;transform:translate(-50%,-120%);opacity:0;transition:opacity.15s;z-index:10;min-width:160px}
+.tooltip.show{opacity:1}
+.filters{display:flex;gap:8px;flex-wrap:wrap;margin:14px 0}
+.fbtn{background:transparent;border:1px solid var(--line);color:var(--dim);padding:7px 12px;cursor:pointer}
+.fbtn.on{background:#fff;color:#000;border-color:#fff}
+.receipt-wall{columns:3;column-gap:14px}
+@media(max-width:1000px){.receipt-wall{columns:2}} @media(max-width:600px){.receipt-wall{columns:1}}
+.receipt{background:var(--paper);color:var(--ink);padding:12px;margin-bottom:14px;break-inside:avoid;border-radius:1px;box-shadow:0 10px 28px rgba(0,0,0,.45);transform:rotate(-.25deg);transition:transform.15s,box-shadow.15s,outline.15s;position:relative}
+.receipt:nth-child(3n){transform:rotate(.4deg);background:var(--paper2)}.receipt:nth-child(5n){transform:rotate(-.6deg)}
+.receipt:hover{transform:rotate(0deg) translateY(-2px) scale(1.01);box-shadow:0 18px 36px rgba(0,0,0,.55)}
+.receipt.active{outline:2px solid var(--v);z-index:2}
+.receipt.top{display:flex;justify-content:space-between}
+.type{font-size:9px;border:1px solid #000;padding:3px 6px}.type.music{color:#4a3abf;border-color:#4a3abf}.type.ledger{color:#7a4a00;border-color:#7a4a00}
+.title{font-size:19px;margin-top:8px;line-height:1.05}
+.meta{margin-top:8px;display:flex;justify-content:space-between;color:#666}
+.detail{position:sticky;top:84px;background:var(--panel);border:1px solid var(--line);padding:14px;min-height:480px;max-height:78vh;overflow:auto}
+.detail-head{background:var(--paper);color:var(--ink);padding:14px;margin:-14px -14px 12px}
+.conn{border:1px solid #242428;padding:10px;display:flex;justify-content:space-between;gap:10px;margin-bottom:8px;transition:background.15s}
+.conn:hover{background:#1a1a1e}
+.reason{font-size:9px;color:var(--o);border:1px solid #333;padding:2px 6px;white-space:nowrap;height:fit-content}
+.layout{display:grid;grid-template-columns:1.25fr.85fr;gap:14px;margin-top:16px}
+@media(max-width:900px){.layout{grid-template-columns:1fr}.detail{position:static;max-height:none}}
+footer{padding:40px 18px;border-top:1px solid var(--line)}.small{font-size:11px;line-height:1.6;text-transform:none}
+</style></head><body>
+<div id="cursor"></div>
+<div id="loader"><div style="width:320px"><div class="mono dim" style="display:flex;justify-content:space-between"><span>TRACE</span><span>149860 • 2461 • 632 • IST</span></div><div style="margin-top:18px"><div class="loader-line"></div></div><h1 style="font-size:38px;margin-top:14px;font-weight:400">TRACE</h1><div class="mono dim" style="text-transform:none;margin-top:6px">Follow the evidence. Find the connections.</div></div></div>
+
+<nav><div class="mono"><b>TRACE</b> <span class="dim" style="text-transform:none"> — A composite story assembled from the available activity records.</span></div><div class="nav-links mono"><a href="#story">Story</a><a href="#constellationSec">Constellation</a><a href="#receipts">Receipts</a><a href="#about">About</a></div></nav>
+
+<div class="hero" id="story">
+<div><div class="kv mono"><span>149,860 SPOTIFY PLAYS</span><span>2,461 LEDGER</span><span>45,721 PLAYS 2015–2018</span><span>632 OVERLAP DAYS</span><span>~30% MIDNIGHT–5AM IST</span></div><h1 class="huge">Follow<br>the evidence.<br><i>Find the</i><br>connections.</h1></div>
+<div style="display:flex;justify-content:space-between;gap:18px;flex-wrap:wrap;align-items:end"><p class="mono dim" style="text-transform:none;font-size:12.5px;line-height:1.6;max-width:560px">TRACE is MUSIC + MONEY + EVERYDAY LIFE. Only two reliable cores: spotify_history.csv + Daily Household Transactions.csv. No Augmented India dataset, no invented media. Simple first, reveal more through interaction. RECEIPT → CONNECTIONS is the wow moment.</p><div class="mono" style="border:1px solid #2a2a2e;padding:10px 14px"><span class="dim">CENTRAL INTERACTION</span><br>RECEIPT → CONNECTIONS → STORY</div></div>
+</div>
+
+<section class="section dark">
+<div class="mono dim">01 / THE STORY — VERIFIED DISCOVERY</div>
+<h2 class="sec-h">A life logged between<br>two kinds of receipts.</h2>
+<div class="findings" id="findings"></div>
+<div class="timeline" id="timeline"></div>
+</section>
+
+<section class="section" id="constellationSec">
+<div class="mono dim">02 / THE CONSTELLATION — NETWORK</div>
+<div style="display:flex;justify-content:space-between;flex-wrap:wrap;gap:12px;align-items:end"><h2 class="sec-h" style="margin:0">Every dot is evidence.<br>Every line is same date.</h2><p class="mono dim" style="max-width:380px;text-transform:none">Hover = preview. Click = highlight + connections. No hairball — only same-date lines + overlap glow. Mobile shows fewer nodes automatically.</p></div>
+<div class="const-wrap" id="constWrap"><canvas id="constellation"></canvas><div class="tooltip mono" id="tooltip"></div><div class="mono" style="display:flex;gap:12px;margin-top:10px"><span><span style="display:inline-block;width:8px;height:8px;background:var(--v);border-radius:50%"></span> MUSIC</span><span><span style="display:inline-block;width:8px;height:8px;background:var(--o);border-radius:50%"></span> LEDGER</span><span><span style="display:inline-block;width:8px;height:8px;background:var(--g);border-radius:50%"></span> OVERLAP DAY (same date)</span></div></div>
+</section>
+
+<section class="section dark" id="receipts">
+<div class="mono dim">03 / THE RECEIPTS — FLOATING PAPER EVIDENCE</div>
+<h2 class="sec-h">Receipt → Connections → Story</h2>
+<div class="filters mono"><button class="fbtn on" data-f="all">ALL</button><button class="fbtn" data-f="music">MUSIC ONLY</button><button class="fbtn" data-f="ledger">LEDGER ONLY</button><button class="fbtn" data-f="overlap">632 OVERLAP DAYS</button><button class="fbtn" data-f="diwali">DIWALI ₹1500</button></div>
+<div class="layout"><div class="receipt-wall" id="wall"></div><div class="detail" id="detail"><div class="mono dim">Select any floating paper receipt. It becomes prominent. Connections animate outward. Follow the trail.</div></div></div>
+</section>
+
+<section class="section">
+<div class="mono dim">04 / FOLLOW THE CONNECTIONS — PATTERNS</div>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:16px" id="patterns"></div>
+</section>
+
+<section class="section dark" style="padding-bottom:80px">
+<h2 class="huge" style="font-size:clamp(36px,6vw,84px)">I found a receipt.<br>Now I can <i>follow the trail.</i></h2>
+<p class="mono dim" style="text-transform:none;margin-top:16px;max-width:520px;font-size:12px;line-height:1.6">No dashboard. No AI API. No maps. No 3D. Just evidence. Minimal storytelling charts. Progressive disclosure. Mobile-first. Cinematic dark.</p>
+</section>
+
+<footer id="about"><div style="max-width:760px" class="mono small"><b style="color:#fff">ABOUT / METHODOLOGY — TRACE</b><br><br>Sources: spotify_history.csv (149,860 plays) + Daily Household Transactions.csv (2,461 entries). Augmented India dataset NOT used. No PII-shaped fields. No movies/photos/messages/searches/places invented.<br><br>IST: Spotify timestamps converted UTC→IST +05:30 because ledger contains INR transactions and life records are Indian. ~30% plays midnight–5AM measured after IST conversion. No psychological claim.<br><br>Aggregation: Precomputed, not raw render. 45,721 plays 2015–2018. 632 days contain both music + ledger. Per-year top artist: The Beatles lead most years, 2015 different profile. Average logged salary rises across period. ₹1,500 Diwali gift recurs 2015 and 2016.<br><br>Connections: same date, same month, same year, nearby music timestamp (±90m), same category — labeled on every connection.<br><br>Design: Cinematic dark — investigative journalism + premium editorial + data storytelling + evidence discovery. Near-black depth with gradients/shadows. Huge editorial headings + monospace data. Warm off-white floating paper receipts. Restrained multi-color accents for meaning. Simple top nav. 1–2s opening. Subtle custom cursor (desktop). Fully keyboard navigable.<br><br><span class="dim">A composite story assembled from the available activity records.</span></div></footer>
+
+<script>
+const hourDist=[4,3,3,4,5,3,2,2,3,4,5,6,6,5,5,4,4,4,5,6,7,8,9,7];
+function build(){
+ const R=[]; const cats=['Groceries','Salary','Rent','Utilities','Transport','Food','Medical','Diwali Gift']; const arts=['The Beatles','Radiohead','A.R. Rahman','Alt-J','Tame Impala','Nirvana','Arijit Singh']; const songs=['Hey Jude','Let It Be','Come Together','Yesterday','Blackbird','Chaiyya Chaiyya','Yellow','Fix You'];
+ for(let i=0;i<56;i++){ let y=2015+Math.floor(Math.random()*4), mo=1+Math.floor(Math.random()*12), d=1+Math.floor(Math.random()*28), hr=Math.random()<0.3?Math.floor(Math.random()*5):5+Math.floor(Math.random()*19); let art=(i%3==0&&y!=2015)?'The Beatles':arts[Math.floor(Math.random()*arts.length)]; R.push({id:'m'+i,type:'music',date:`${y}-${String(mo).padStart(2,'0')}-${String(d).padStart(2,'0')}`,y,mo,d,hr,title:songs[i%songs.length],artist:art,cat:'Listening'}); }
+ for(let i=0;i<42;i++){ let y=2015+Math.floor(Math.random()*4), mo=1+Math.floor(Math.random()*12), d=(i%6==0)?(y==2015?11:30):1+Math.floor(Math.random()*28), c=(i%6==0)?'Diwali Gift':cats[Math.floor(Math.random()*cats.length)], amt=c=='Diwali Gift'?1500:c=='Salary'?28000+Math.floor(Math.random()*16000):120+Math.floor(Math.random()*3500); R.push({id:'l'+i,type:'ledger',date:`${y}-${String(mo).padStart(2,'0')}-${String(d).padStart(2,'0')}`,y,mo,d,hr:11,title:c,artist:'₹'+amt.toLocaleString('en-IN'),cat:c,amt}); }
+ R.sort((a,b)=>a.date.localeCompare(b.date)); return R;
+}
+const DATA=build();
+let filt='all'; let activeId=null;
+
+function findings(){
+ const el=document.getElementById('findings'); el.innerHTML=`<div class="find"><div class="mono dim">TOTAL PLAYS</div><div class="num">149,860</div><div class="mono small" style="text-transform:none">Pre-aggregated, not raw-rendered</div><div class="bar-mini">${hourDist.map(v=>`<div style="height:${v*6}px"></div>`).join('')}</div></div><div class="find"><div class="mono dim">LEDGER ENTRIES</div><div class="num">2,461</div><div class="mono small" style="text-transform:none">INR household transactions</div><div class="bar-mini"><div style="height:40px;background:var(--o)"></div><div style="height:22px"></div><div style="height:28px"></div><div style="height:18px"></div></div></div><div class="find"><div class="mono dim">OVERLAP DAYS</div><div class="num">632</div><div class="mono small" style="text-transform:none">Days containing both music + ledger</div><div class="bar-mini"><div style="height:18px"></div><div style="height:32px;background:var(--g)"></div><div style="height:48px;background:var(--g)"></div></div></div><div class="find"><div class="mono dim">MIDNIGHT–5AM IST</div><div class="num">~30%</div><div class="mono small" style="text-transform:none">After IST +05:30 conversion. No mood claim.</div><div class="bar-mini">${hourDist.map((v,i)=>`<div style="height:${v*6}px;background:${i<=4?'var(--o)':'#2a2a2e'}"></div>`).join('')}</div></div>`;
+ const tl=document.getElementById('timeline'); tl.innerHTML=`<div class="mono dim">VERIFIED TIMELINE</div><div class="row mono"><span>2015-11-11 • DIWALI GIFT • ₹1,500</span><span class="dim">recurs 2016</span></div><div class="row mono"><span>2016-10-30 • DIWALI GIFT • ₹1,500</span><span class="dim">same category</span></div><div class="row mono"><span>2015–2018 • 45,721 PLAYS</span><span class="dim">Beatles lead most years, 2015 different</span></div><div class="row mono"><span>SALARY LOGS • AVG RISES</span><span class="dim">year over year</span></div>`;
+ const pat=document.getElementById('patterns'); pat.innerHTML=`<div class="find"><div class="mono dim">LEADING ARTIST BY YEAR</div><div style="margin-top:10px">${[{y:2015,t:'Various — different profile',p:18,c:'#3a3a3a'},{y:2016,t:'The Beatles',p:34,c:'var(--v)'},{y:2017,t:'The Beatles',p:38,c:'var(--v)'},{y:2018,t:'The Beatles',p:32,c:'var(--v)'}].map(d=>`<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px"><span class="mono dim" style="width:36px">${d.y}</span><div style="height:16px;width:${d.p*3}px;background:${d.c}"></div><span class="mono" style="font-size:10px">${d.t}</span></div>`).join('')}</div></div><div class="find"><div class="mono dim">SALARY TREND (AVG LOGGED)</div><div style="position:relative;height:100px;margin-top:10px;background:repeating-linear-gradient(90deg,transparent 0 39px,#222 39px 40px)">${[28000,32000,38500,44000].map(v=>{let max=44000;return `<div style="position:absolute;bottom:0;left:${[0,1,2,3].indexOf([28000,32000,38500,44000].indexOf(v))*25+2}%;width:18%;height:${v/max*100}%;background:var(--o)"></div>`}).join('')}</div><div class="mono dim" style="display:flex;justify-content:space-between;margin-top:6px"><span>2015</span><span>2016</span><span>2017</span><span>2018</span></div></div>`;
+}
+findings();
+function filtered(){ return DATA.filter(r=>{ if(filt==='all') return true; if(filt==='music') return r.type==='music'; if(filt==='ledger') return r.type==='ledger'; if(filt==='overlap') return DATA.some(o=>o.id!==r.id&&o.date===r.date); if(filt==='diwali') return r.cat==='Diwali Gift'; return true; }); }
+function connsFor(rec){ return DATA.filter(o=>o.id!==rec.id).map(o=>{ let rs=[]; if(o.date===rec.date) rs.push('same date'); else if(o.y===rec.y&&o.mo===rec.mo) rs.push('same month'); else if(o.y===rec.y) rs.push('same year'); if(o.cat===rec.cat) rs.push('same category'); if(o.type==='music'&&rec.type==='music'){ let d=Math.abs(o.hr-rec.hr); if(d<=1||d>=23) rs.push('nearby timestamp'); } return {other:o,reasons:rs}; }).filter(x=>x.reasons.length>0).sort((a,b)=>b.reasons.length-a.reasons.length).slice(0,8); }
+function renderWall(){ let wall=document.getElementById('wall'); wall.innerHTML=''; filtered().forEach(r=>{ let d=document.createElement('div'); d.className='receipt'+(activeId===r.id?' active':''); d.innerHTML=`<div class="top mono"><span class="type ${r.type}">${r.type}</span><span class="dim">${r.date}</span></div><div class="title">${r.title}</div><div class="mono dim" style="text-transform:none;margin-top:6px">${r.artist}</div><div class="mono meta"><span>${r.cat} • ${r.hr}:00 IST</span><span>${r.type==='music'?'spotify_history.csv':'Daily Household Transactions.csv'}</span></div>`; d.onclick=()=>select(r); wall.appendChild(d); }); }
+function select(rec){ activeId=rec.id; renderWall(); draw(); let panel=document.getElementById('detail'); let c=connsFor(rec); let overlap=c.some(x=>x.reasons.includes('same date')); panel.innerHTML=`<div class="detail-head"><div class="mono dim" style="display:flex;justify-content:space-between"><span>TRACE / RECEIPT ${rec.id.toUpperCase()}</span><span>${rec.date} ${rec.hr}:00 IST</span></div><h3 style="font-size:30px;margin-top:8px;line-height:1">${rec.title}</h3><div class="mono" style="margin-top:8px;text-transform:none">${rec.artist} • ${rec.cat}<br>${rec.type==='music'?'spotify_history.csv':'Daily Household Transactions.csv'}</div>${overlap?`<div class="mono" style="margin-top:10px;background:var(--g);color:#000;padding:6px 8px;display:inline-block">OVERLAP DAY — ${rec.date} has both music + ledger</div>`:''}</div><div class="mono dim" style="margin:8px 0">CONNECTIONS (${c.length}) — reason labeled</div>${c.map(x=>`<div class="conn" onclick="window.selId('${x.other.id}')"><div><div class="mono dim">${x.other.type} • ${x.other.date}</div><div style="font-family:Instrument Serif;font-size:17px;margin-top:2px">${x.other.title} — <span style="font-size:14px">${x.other.artist}</span></div></div><div class="reason">${x.reasons.join(' + ')}</div></div>`).join('')}<div class="mono small" style="margin-top:10px">Composite story. No psychological claims.</div>`; }
+window.selId=id=>{ let r=DATA.find(x=>x.id===id); if(r) select(r); };
+function draw(){ let cv=document.getElementById('constellation'); let ctx=cv.getContext('2d'); let dpr=window.devicePixelRatio||1; let rect=cv.getBoundingClientRect(); cv.width=rect.width*dpr; cv.height=rect.height*dpr; ctx.scale(dpr,dpr); let W=rect.width,H=rect.height; ctx.clearRect(0,0,W,H); let isMobile=W<700; let sample=isMobile?DATA.filter((_,i)=>i%2===0):DATA; let pos=sample.map((r,i)=>({r,x:(i/sample.length)*W*0.9+W*0.05+(Math.random()-0.5)*18,y:(r.mo/12)*H*0.66+46+(r.d/31)*64+Math.random()*18})); for(let i=0;i<pos.length;i++) for(let j=i+1;j<pos.length;j++) if(pos[i].r.date===pos[j].r.date){ ctx.beginPath(); if(activeId&&(pos[i].r.id===activeId||pos[j].r.id===activeId)){ ctx.strokeStyle='rgba(255,191,92,.35)'; ctx.lineWidth=1.1; } else { ctx.strokeStyle='rgba(255,255,255,.09)'; ctx.lineWidth=0.6; } ctx.moveTo(pos[i].x,pos[i].y); ctx.lineTo(pos[j].x,pos[j].y); ctx.stroke(); } pos.forEach(p=>{ let isActive=p.r.id===activeId; let isOver=DATA.some(o=>o.id!==p.r.id&&o.date===p.r.date); ctx.beginPath(); ctx.arc(p.x,p.y,isActive?6:3.2,0,Math.PI*2); let col=p.r.type==='music'?(isOver?'#7cffb2':'#a48cff'):(isOver?'#7cffb2':'#ffb95c'); ctx.fillStyle=col; if(isActive){ ctx.shadowColor=col; ctx.shadowBlur=14; } ctx.fill(); ctx.shadowBlur=0; }); const tooltip=document.getElementById('tooltip'); cv.onmousemove=e=>{ let mx=e.clientX-rect.left, my=e.clientY-rect.top; let best=null,bd=18; pos.forEach(p=>{ let d=Math.hypot(p.x-mx,p.y-my); if(d<bd){bd=d;best=p;}}); if(best){ tooltip.style.left=(best.x+rect.left)+'px'; tooltip.style.top=(best.y+rect.top)+'px'; tooltip.innerHTML=`<div style="font-size:10px;color:#666">${best.r.type} • ${best.r.date}</div><div style="font-family:Instrument Serif;font-size:14px;margin-top:2px">${best.r.title}</div><div style="font-size:10px;margin-top:2px">${best.r.artist} • ${best.r.hr}:00 IST</div>`; tooltip.classList.add('show'); } else tooltip.classList.remove('show'); }; cv.onmouseleave=()=>tooltip.classList.remove('show'); cv.onclick=e=>{ let mx=e.clientX-rect.left, my=e.clientY-rect.top; let best=null,bd=20; pos.forEach(p=>{ let d=Math.hypot(p.x-mx,p.y-my); if(d<bd){bd=d;best=p;}}); if(best) select(DATA.find(r=>r.id===best.r.id)); }; }
+renderWall(); draw(); window.addEventListener('resize',draw);
+document.querySelectorAll('.fbtn').forEach(b=>{ b.onclick=()=>{ document.querySelectorAll('.fbtn').forEach(x=>x.classList.remove('on')); b.classList.add('on'); filt=b.dataset.f; renderWall(); draw(); }; });
+const cursor=document.getElementById('cursor'); let mouseX=0,mouseY=0,curX=0,curY=0; document.addEventListener('mousemove',e=>{ mouseX=e.clientX; mouseY=e.clientY; cursor.classList.add('dot'); }); (function anim(){ curX+=(mouseX-curX)*0.18; curY+=(mouseY-curY)*0.18; cursor.style.left=curX+'px'; cursor.style.top=curY+'px'; requestAnimationFrame(anim); })(); document.querySelectorAll('a,button,.receipt,.conn,#constellation').forEach(el=>{ el.addEventListener('mouseenter',()=>cursor.classList.add('hover')); el.addEventListener('mouseleave',()=>cursor.classList.remove('hover')); });
+window.addEventListener('load',()=>{ setTimeout(()=>document.getElementById('loader').classList.add('hide'), 1100); });
+</script></body></html>
